@@ -8,7 +8,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
 
-class NewUserRequest {
+public class NewUserRequest {
 
     @Unique(entity = User.class, field = "username")
     @Size(max=20)

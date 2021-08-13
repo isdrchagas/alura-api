@@ -6,13 +6,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.lang.String.format;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestController
-class CourseController {
+public class CourseController {
 
     private final CourseRepository courseRepository;
 
@@ -22,7 +23,12 @@ class CourseController {
 
     @GetMapping("/courses")
     ResponseEntity<List<CourseResponse>> allCourses() {
-        return ResponseEntity.ok().build();
+        List<Course> courses = courseRepository.findAll();
+        List<CourseResponse> listCourseResponse = new ArrayList<>();
+
+        courses.forEach(course -> listCourseResponse.add(new CourseResponse(course)));
+
+        return ResponseEntity.ok(listCourseResponse);
     }
 
     @GetMapping("/courses/{code}")
