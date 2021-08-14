@@ -1,5 +1,10 @@
 package br.com.alura.school.course;
 
+import br.com.alura.school.enrollment.Enrollment;
+import br.com.alura.school.enrollment.EnrollmentRepository;
+import br.com.alura.school.enrollment.NewEnrollmentRequest;
+import br.com.alura.school.user.User;
+import br.com.alura.school.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -26,6 +32,12 @@ class CourseControllerTest {
 
     @Autowired
     private CourseRepository courseRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
 
     @Test
     void should_retrieve_course_by_code() throws Exception {
@@ -69,4 +81,60 @@ class CourseControllerTest {
                 .andExpect(header().string("Location", "/courses/java-2"));
     }
 
+    @Test
+    void not_found_when_user_does_not_exist_to_enroll() throws Exception {
+        String courseCode = "java-3";
+        NewEnrollmentRequest newEnrollment = new NewEnrollmentRequest("isa");
+
+        mockMvc.perform(post(format("/courses/%s/enroll", courseCode))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(newEnrollment)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void not_found_when_course_does_not_exist_to_enroll() throws Exception {
+        userRepository.save(new User("isa", "isa@email.com"));
+
+        String courseCode = "java-3";
+        NewEnrollmentRequest newEnrollment = new NewEnrollmentRequest("isa");
+
+        mockMvc.perform(post(format("/courses/%s/enroll", courseCode))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(newEnrollment)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void bad_request_when_enrollment_course_already_exists_to_user() throws Exception {
+        String username = "isa";
+        String courseCode = "spring-2";
+
+        User user = userRepository.save(new User(username, "isa@email.com"));
+        Course course = courseRepository.save(new Course(courseCode, "Spring Boot", "Spring Boot"));
+        enrollmentRepository.save(new Enrollment(course, user));
+
+        NewEnrollmentRequest newEnrollment = new NewEnrollmentRequest(username);
+
+        mockMvc.perform(post(format("/courses/%s/enroll", courseCode))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(newEnrollment)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void should_add_new_enrollment() throws Exception {
+        String username = "isa";
+        String courseCode = "spring-2";
+
+        User user = userRepository.save(new User(username, "isa@email.com"));
+        Course course = courseRepository.save(new Course(courseCode, "Spring Boot", "Spring Boot"));
+
+        NewEnrollmentRequest newEnrollment = new NewEnrollmentRequest(username);
+
+        mockMvc.perform(post(format("/courses/%s/enroll", courseCode))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(newEnrollment)))
+                .andExpect(status().isCreated());
+    }
 }
