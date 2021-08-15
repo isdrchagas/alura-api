@@ -7,6 +7,8 @@ import br.com.alura.school.user.User;
 import br.com.alura.school.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,6 +20,7 @@ import static java.lang.String.format;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -51,7 +54,12 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.name", is("Java OO")))
                 .andExpect(jsonPath("$.shortDescription", is("Java and O...")));
     }
-
+    @Test
+    void not_found_when_course_code_does_not_exist() throws Exception {
+        mockMvc.perform(get("/course/non-existent")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
     @Test
     void should_retrieve_all_courses() throws Exception {
         courseRepository.save(new Course("spring-1", "Spring Basics", "Spring Core and Spring MVC."));
@@ -69,6 +77,12 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$[1].name", is("Spring Boot")))
                 .andExpect(jsonPath("$[1].shortDescription", is("Spring Boot")));
     }
+    @Test
+    void no_content_when_there_are_no_courses() throws Exception {
+        mockMvc.perform(get("/courses")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
 
     @Test
     void should_add_new_course() throws Exception {
@@ -80,7 +94,53 @@ class CourseControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/courses/java-2"));
     }
+    @Test
+    void should_not_allow_duplication_of_code() throws Exception {
+        courseRepository.save(new Course("java-2", "Collections in Java","Java Collections: Lists, Sets, Maps and more."));
 
+        NewCourseRequest newCourse = new NewCourseRequest("java-2", "Java Collections", "Java Collections: Lists, Sets, Maps and more.");
+        mockMvc.perform(post("/courses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(newCourse)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+    @Test
+    void should_not_allow_duplication_of_name() throws Exception {
+        courseRepository.save(new Course("java-1", "Java OO", "Java and Object Orientation: Encapsulation, Inheritance and Polymorphism."));
+
+        NewCourseRequest newCourse = new NewCourseRequest("java1", "Java OO", "Java and Object Orientation: Encapsulation, Inheritance and Polymorphism.");
+
+        mockMvc.perform(post("/courses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(newCourse)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "java-and-objects-orientation, Java OO,  Learn about Java and Object Orientation",
+            " , Java OO, Learn about Java and Object Orientation",
+            "'', Java OO, Learn about Java and Object Orientation",
+            "'     ', Java OO, Learn about Java and Object Orientation",
+            "java-1, Java: Object Orientation, Learn about Java and Object Orientation",
+            "java-1, , Learn about Java and Object Orientation",
+            "java-1, '', Learn about Java and Object Orientation",
+            "java-1, '    ', Learn about Java and Object Orientation",
+            "java-1, Java OO, an-description-that-is-really-really-really-really-really-really-really-big-very-big",
+            "java-1, Java OO, ",
+            "java-1, Java OO, ''",
+            "java-1, Java OO, '    '",
+    })
+    void should_validate_bad_courses_requests(String code, String name, String description) throws Exception {
+        NewCourseRequest newCourse = new NewCourseRequest(code, name, description);
+
+        mockMvc.perform(post("/courses")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonMapper.writeValueAsString(newCourse)))
+                .andExpect(status().isBadRequest());
+    }
     @Test
     void not_found_when_user_does_not_exist_to_enroll() throws Exception {
         String courseCode = "java-3";

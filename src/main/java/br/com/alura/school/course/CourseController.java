@@ -32,10 +32,12 @@ public class CourseController {
     @GetMapping("/courses")
     ResponseEntity<List<CourseResponse>> allCourses() {
         List<Course> courses = courseRepository.findAll();
+        if (courses.isEmpty()) {
+            throw new ResponseStatusException(NO_CONTENT, "No courses registered yet.");
+        }
+
         List<CourseResponse> listCourseResponse = new ArrayList<>();
-
         courses.forEach(course -> listCourseResponse.add(new CourseResponse(course)));
-
         return ResponseEntity.ok(listCourseResponse);
     }
 
@@ -70,7 +72,6 @@ public class CourseController {
     @GetMapping("/courses/enroll/report")
     ResponseEntity<List<EnrollmentReportResponse>> getEnrollmentReport() {
         List<EnrollmentReport> enrollmentReports = enrollmentRepository.countUserEnrollments();
-
         if (enrollmentReports.isEmpty()) {
             throw new ResponseStatusException(NO_CONTENT, "No user registered yet.");
         }

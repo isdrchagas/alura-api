@@ -26,6 +26,9 @@ public class Course {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @Size(max = 80)
+    @NotBlank
+    @Column(nullable = false)
     private String description;
 
     @Deprecated

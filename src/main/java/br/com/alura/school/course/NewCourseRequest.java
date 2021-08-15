@@ -20,6 +20,8 @@ public class NewCourseRequest {
     @JsonProperty
     private final String name;
 
+    @Size(max = 80)
+    @NotBlank
     @JsonProperty
     private final String description;
 
