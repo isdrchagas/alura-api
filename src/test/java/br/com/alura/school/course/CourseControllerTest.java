@@ -137,4 +137,57 @@ class CourseControllerTest {
                 .content(jsonMapper.writeValueAsString(newEnrollment)))
                 .andExpect(status().isCreated());
     }
+
+    @Test
+    void no_content_when_users_do_not_have_enrollments() throws Exception {
+
+        mockMvc.perform(get("/courses/enroll/report")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void should_retrieve_all_enrollments_grouped_by_email() throws Exception {
+        User user = userRepository.save(new User("isa", "isa@email.com"));
+        Course course = courseRepository.save(new Course("spring-2", "Spring Boot", "Spring Boot"));
+        enrollmentRepository.save(new Enrollment(course, user));
+
+        mockMvc.perform(get("/courses/enroll/report")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()", is(1)))
+                .andExpect(jsonPath("$[0].email", is("isa@email.com")))
+                .andExpect(jsonPath("$[0].quantidade_matriculas", is(1)));
+    }
+
+    @Test
+    void should_retrieve_all_enrollments_grouped_by_email_and_order_by_desc() throws Exception {
+        User userIsa = userRepository.save(new User("isa", "isa@email.com"));
+        User userAna = userRepository.save(new User("ana", "ana@email.com"));
+        User userCaio = userRepository.save(new User("caio", "caio@email.com"));
+        User userNico = userRepository.save(new User("nico", "nico@email.com"));
+        User userRodrigo = userRepository.save(new User("rodrigo", "rodrigo@email.com"));
+
+        Course course1 = courseRepository.save(new Course("spring-1", "Spring Boot 1", "Spring Boot 1"));
+        Course course2 = courseRepository.save(new Course("spring-2", "Spring Boot 2", "Spring Boot 2"));
+        Course course3 = courseRepository.save(new Course("spring-3", "Spring Boot 3", "Spring Boot 3"));
+
+        enrollmentRepository.save(new Enrollment(course1, userIsa));
+        enrollmentRepository.save(new Enrollment(course2, userIsa));
+        enrollmentRepository.save(new Enrollment(course3, userCaio));
+        enrollmentRepository.save(new Enrollment(course1, userCaio));
+        enrollmentRepository.save(new Enrollment(course2, userCaio));
+        enrollmentRepository.save(new Enrollment(course1, userNico));
+
+        mockMvc.perform(get("/courses/enroll/report")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()", is(3)))
+                .andExpect(jsonPath("$[0].email", is("caio@email.com")))
+                .andExpect(jsonPath("$[0].quantidade_matriculas", is(3)))
+                .andExpect(jsonPath("$[1].email", is("isa@email.com")))
+                .andExpect(jsonPath("$[1].quantidade_matriculas", is(2)))
+                .andExpect(jsonPath("$[2].email", is("nico@email.com")))
+                .andExpect(jsonPath("$[2].quantidade_matriculas", is(1)));
+    }
 }

@@ -1,11 +1,8 @@
 package br.com.alura.school.course;
 
-import br.com.alura.school.enrollment.Enrollment;
-import br.com.alura.school.enrollment.EnrollmentRepository;
-import br.com.alura.school.enrollment.NewEnrollmentRequest;
+import br.com.alura.school.enrollment.*;
 import br.com.alura.school.user.User;
 import br.com.alura.school.user.UserRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,8 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.lang.String.format;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.*;
 
 @RestController
 public class CourseController {
@@ -69,5 +65,18 @@ public class CourseController {
         enrollmentRepository.save(new Enrollment(course, user));
         //location null just because its not necessary a location for while
         return ResponseEntity.created(null).build();
+    }
+
+    @GetMapping("/courses/enroll/report")
+    ResponseEntity<List<EnrollmentReportResponse>> getEnrollmentReport() {
+        List<EnrollmentReport> enrollmentReports = enrollmentRepository.countUserEnrollments();
+
+        if (enrollmentReports.isEmpty()) {
+            throw new ResponseStatusException(NO_CONTENT, "No user registered yet.");
+        }
+
+        List<EnrollmentReportResponse> enrollmentReportResponses = new ArrayList<>();
+        enrollmentReports.forEach(enrollmentReport -> enrollmentReportResponses.add(enrollmentReport.toResponse()));
+        return ResponseEntity.ok(enrollmentReportResponses);
     }
 }
