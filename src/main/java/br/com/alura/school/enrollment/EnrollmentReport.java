@@ -5,16 +5,13 @@ public class EnrollmentReport {
     private String email;
     private Long enrollmentsQuantity;
 
-    protected EnrollmentReport() {
-    }
-
     public EnrollmentReport(String email, Long enrollmentsQuantity) {
         this.email = email;
         this.enrollmentsQuantity = enrollmentsQuantity;
     }
 
     public EnrollmentReportResponse toResponse() {
-        return new EnrollmentReportResponse(this.email, this.enrollmentsQuantity);
+        return new EnrollmentReportResponse(this);
     }
 
     public String getEmail() {

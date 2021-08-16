@@ -3,15 +3,16 @@ package br.com.alura.school.course;
 import br.com.alura.school.enrollment.*;
 import br.com.alura.school.user.User;
 import br.com.alura.school.user.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static org.springframework.http.HttpStatus.*;
@@ -36,8 +37,7 @@ public class CourseController {
             throw new ResponseStatusException(NO_CONTENT, "No courses registered yet.");
         }
 
-        List<CourseResponse> listCourseResponse = new ArrayList<>();
-        courses.forEach(course -> listCourseResponse.add(new CourseResponse(course)));
+        List<CourseResponse> listCourseResponse = courses.stream().map(course -> new CourseResponse(course)).collect(Collectors.toList());
         return ResponseEntity.ok(listCourseResponse);
     }
 
@@ -65,8 +65,7 @@ public class CourseController {
         }
 
         enrollmentRepository.save(new Enrollment(course, user));
-        //location null just because its not necessary a location for while
-        return ResponseEntity.created(null).build();
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @GetMapping("/courses/enroll/report")
@@ -76,8 +75,7 @@ public class CourseController {
             throw new ResponseStatusException(NO_CONTENT, "No user registered yet.");
         }
 
-        List<EnrollmentReportResponse> enrollmentReportResponses = new ArrayList<>();
-        enrollmentReports.forEach(enrollmentReport -> enrollmentReportResponses.add(enrollmentReport.toResponse()));
+        List<EnrollmentReportResponse> enrollmentReportResponses = enrollmentReports.stream().map(enrollmentReport -> enrollmentReport.toResponse()).collect(Collectors.toList());
         return ResponseEntity.ok(enrollmentReportResponses);
     }
 }
