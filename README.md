@@ -20,4 +20,4 @@ Esta é uma API simples que tem o objetivo de gerenciar usuários, cursos e matr
 
 ## Documentação da API
 
-É possível acessar a documentação da API rodando a aplicação e acessando http://localhost:8080/swagger-ui.html
+É possível acessar a documentação da API com Swagger acessando [esse link](https://hidden-castle-95268.herokuapp.com/swagger-ui.html#/).
